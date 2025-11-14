@@ -110,10 +110,16 @@ function PanchangaClock() {
             <g transform="translate(300, 300)">
               
               {/* KP Sub-Lords Ring - Outermost */}
-              <KPSubLordRing showKPSubLords={showKPSubLords} />
+              <KPSubLordRing 
+                 showKPSubLords={showKPSubLords} 
+                planets={panchangaData?.planets}
+              />
               
               {/* Nakshatra Ring - Outer */}
-              <NakshatraRing currentMoonLongitude={panchangaData?.moon.longitude} />
+              <NakshatraRing 
+              currentMoonLongitude={panchangaData?.moon.longitude}
+              planets={panchangaData?.planets}
+               />
               
               {/* Rashi Ring - Middle */}
               <RashiRing currentMoonLongitude={panchangaData?.moon.longitude} />
