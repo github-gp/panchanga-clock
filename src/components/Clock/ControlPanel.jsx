@@ -1,4 +1,6 @@
 import React from 'react';
+// ⭐ NEW: Import theme hook
+import { useTheme } from '../../ThemeContext';
 
 function ControlPanel({ 
   showHouses, 
@@ -8,23 +10,31 @@ function ControlPanel({
   location,
   setLocation 
 }) {
+  // ⭐ NEW: Get theme colors
+  const { colors } = useTheme();
+
   return (
     <div style={{
       marginTop: '20px',
       padding: '20px',
-      background: 'rgba(255, 255, 255, 0.05)',
+      // ⭐ CHANGED: Use theme card background
+      background: colors.cardBackground,
       borderRadius: '15px',
       display: 'flex',
       flexDirection: 'column',
       gap: '15px',
       maxWidth: '600px',
-      margin: '20px auto'
+      margin: '20px auto',
+      // ⭐ NEW: Add smooth transition
+      transition: 'background 0.3s ease',
     }}>
       <h3 style={{
         fontSize: '18px',
-        color: '#D4AF37',
+        // ⭐ CHANGED: Use theme accent color
+        color: colors.accentText,
         marginBottom: '10px',
-        textAlign: 'center'
+        textAlign: 'center',
+        transition: 'color 0.3s ease',
       }}>
         ⚙️ Display Options
       </h3>
@@ -41,15 +51,26 @@ function ControlPanel({
           onClick={() => setShowHouses(!showHouses)}
           style={{
             padding: '12px 24px',
-            background: showHouses ? '#FFD700' : 'rgba(255, 255, 255, 0.1)',
-            color: showHouses ? '#000' : '#FFF',
-            border: `2px solid ${showHouses ? '#FFD700' : '#666'}`,
+            // ⭐ CHANGED: Use theme button colors
+            background: showHouses 
+              ? colors.buttonBackgroundActive 
+              : colors.buttonBackground,
+            color: colors.buttonText,
+            border: `2px solid ${colors.buttonBorder}`,
             borderRadius: '10px',
             fontSize: '14px',
             fontWeight: 'bold',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
             minWidth: '150px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = colors.buttonBackgroundActive;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = showHouses 
+              ? colors.buttonBackgroundActive 
+              : colors.buttonBackground;
           }}
         >
           {showHouses ? '✓' : '○'} Houses (Bhava)
@@ -60,15 +81,26 @@ function ControlPanel({
           onClick={() => setShowKPSubLords(!showKPSubLords)}
           style={{
             padding: '12px 24px',
-            background: showKPSubLords ? '#4682B4' : 'rgba(255, 255, 255, 0.1)',
-            color: '#FFF',
-            border: `2px solid ${showKPSubLords ? '#4682B4' : '#666'}`,
+            // ⭐ CHANGED: Use theme button colors
+            background: showKPSubLords 
+              ? colors.buttonBackgroundActive 
+              : colors.buttonBackground,
+            color: colors.buttonText,
+            border: `2px solid ${colors.buttonBorder}`,
             borderRadius: '10px',
             fontSize: '14px',
             fontWeight: 'bold',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
             minWidth: '150px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = colors.buttonBackgroundActive;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = showKPSubLords 
+              ? colors.buttonBackgroundActive 
+              : colors.buttonBackground;
           }}
         >
           {showKPSubLords ? '✓' : '○'} KP Sub-Lords
@@ -79,14 +111,21 @@ function ControlPanel({
       <div style={{
         textAlign: 'center',
         padding: '10px',
-        background: 'rgba(255, 255, 255, 0.05)',
+        // ⭐ CHANGED: Use theme input background
+        background: colors.inputBackground,
         borderRadius: '8px',
         fontSize: '12px',
-        color: '#CCC'
+        // ⭐ CHANGED: Use theme secondary text
+        color: colors.secondaryText,
+        transition: 'all 0.3s ease',
       }}>
         📍 Location: {location.city} ({location.latitude.toFixed(2)}°N, {location.longitude.toFixed(2)}°E)
         <br />
-        <span style={{ fontSize: '10px', opacity: 0.7 }}>
+        <span style={{ 
+          fontSize: '10px', 
+          // ⭐ CHANGED: Use theme tertiary text
+          color: colors.tertiaryText
+        }}>
           Ascendant calculated for current time and location
         </span>
       </div>
@@ -95,11 +134,14 @@ function ControlPanel({
       {showHouses && (
         <div style={{
           fontSize: '11px',
-          color: '#999',
+          // ⭐ CHANGED: Use theme tertiary text
+          color: colors.tertiaryText,
           textAlign: 'center',
           padding: '8px',
-          background: 'rgba(255, 215, 0, 0.1)',
-          borderRadius: '6px'
+          // ⭐ CHANGED: Use theme button background
+          background: colors.buttonBackground,
+          borderRadius: '6px',
+          transition: 'all 0.3s ease',
         }}>
           🏠 House 1 (ASC) = Lagna/Ascendant at Eastern Horizon
         </div>
@@ -108,11 +150,14 @@ function ControlPanel({
       {showKPSubLords && (
         <div style={{
           fontSize: '11px',
-          color: '#999',
+          // ⭐ CHANGED: Use theme tertiary text
+          color: colors.tertiaryText,
           textAlign: 'center',
           padding: '8px',
-          background: 'rgba(70, 130, 180, 0.1)',
-          borderRadius: '6px'
+          // ⭐ CHANGED: Use theme button background
+          background: colors.buttonBackground,
+          borderRadius: '6px',
+          transition: 'all 0.3s ease',
         }}>
           📊 KP: 249 divisions, each Nakshatra divided by 9 sub-lords
         </div>

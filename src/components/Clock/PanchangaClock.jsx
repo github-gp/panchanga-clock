@@ -6,12 +6,19 @@ import PanchangaInfo from './PanchangaInfo';
 import HousesRing from './HousesRing';
 import KPSubLordRing from './KPSubLordRing';
 import ControlPanel from './ControlPanel';
+import DateNavigation from './DateNavigation';
+import ClockSideButtons from './ClockSideButtons';
+import MuhurtaTimeline from './MuhurtaTimeline';
+import LocationPicker from './LocationPicker'; // ⭐ NEW: Enhanced location picker
 import { getPanchangaData } from '../../services/astronomyService';
-import { calculateAscendant, calculateHouseCusps, DEFAULT_LOCATION } from '../../services/houseCalculations';
+import { calculateAscendant, DEFAULT_LOCATION } from '../../services/houseCalculations';
+import { useTheme } from '../../ThemeContext';
 
 function PanchangaClock() {
-  // State to store current time
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const { colors } = useTheme();
+
+  // State for selected date and time
+  const [selectedDate, setSelectedDate] = useState(new Date());
   
   // State to store Panchanga data
   const [panchangaData, setPanchangaData] = useState(null);
@@ -22,43 +29,67 @@ function PanchangaClock() {
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [ascendant, setAscendant] = useState(null);
 
-  // Update time every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Calculate Panchanga data and Ascendant when time changes
+  // Calculate Panchanga for the selected date and time
   useEffect(() => {
     const calculatePanchanga = () => {
       try {
-        const data = getPanchangaData(currentTime);
+        const data = getPanchangaData(selectedDate);
         setPanchangaData(data);
         
-        // Calculate ascendant
-        // Calculate ascendant using Sun position for consistency
-    const asc = calculateAscendant(
-        currentTime, 
-        location.latitude, 
-        location.longitude,
-        data.sun.longitude  // Pass Sun position
+        const asc = calculateAscendant(
+          selectedDate, 
+          location.latitude, 
+          location.longitude,
+          data.sun.longitude
         );
-      setAscendant(asc);
+        setAscendant(asc);
       } catch (error) {
         console.error('Error calculating Panchanga:', error);
       }
     };
 
     calculatePanchanga();
+  }, [selectedDate, location]);
 
-    // Recalculate every minute
-    const panchangaTimer = setInterval(calculatePanchanga, 60000);
+  // Handle date/time change
+  const handleDateChange = (newDate) => {
+    setSelectedDate(newDate);
+  };
 
-    return () => clearInterval(panchangaTimer);
-  }, [currentTime, location]); // Add location dependency
+  // Handle location change
+  const handleLocationChange = (newLocation) => {
+    setLocation(newLocation);
+  };
+
+  // Go to previous day
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  // Go to next day
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') {
+        goToPreviousDay();
+      } else if (e.key === 'ArrowRight') {
+        goToNextDay();
+      } else if (e.key === 'Home') {
+        setSelectedDate(new Date());
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedDate]);
 
   // Format time as HH:MM:SS
   const formatTime = (date) => {
@@ -68,6 +99,13 @@ function PanchangaClock() {
     return `${hours}:${minutes}:${seconds}`;
   };
 
+  // Check if viewing current moment
+  const isNow = () => {
+    const now = new Date();
+    const diff = Math.abs(selectedDate - now);
+    return diff < 60000; // Within 1 minute
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -75,7 +113,9 @@ function PanchangaClock() {
       justifyContent: 'center',
       alignItems: 'center',
       minHeight: '100vh',
-      padding: '20px'
+      padding: '20px',
+      background: colors.background,
+      transition: 'background 0.3s ease',
     }}>
       <div style={{
         textAlign: 'center',
@@ -84,87 +124,97 @@ function PanchangaClock() {
       }}>
         <h1 style={{ 
           fontSize: '32px', 
-          marginBottom: '20px',
-          color: '#f0f0f0'
+          marginBottom: '30px',
+          color: colors.primaryText,
+          transition: 'color 0.3s ease',
         }}>
           🕐 Panchanga Clock
         </h1>
         
-        {/* Main Clock SVG */}
+        {/* Clock Container with Side Buttons */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.05)',
+          position: 'relative',
+          background: colors.cardBackground,
           borderRadius: '20px',
           padding: '40px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          transition: 'background 0.3s ease',
+          maxWidth: '700px',
+          margin: '0 auto',
         }}>
+          {/* Previous/Next Day Buttons on Sides */}
+          <ClockSideButtons 
+            onPreviousDay={goToPreviousDay}
+            onNextDay={goToNextDay}
+          />
+
+          {/* Main Clock SVG */}
           <svg 
             width="600" 
             height="600" 
             viewBox="0 0 600 600"
             style={{
-              background: 'linear-gradient(135deg, #2C3E50 0%, #1a1a2e 100%)',
+              background: colors.svgBackground,
               borderRadius: '50%',
-              boxShadow: '0 0 50px rgba(0, 0, 0, 0.5)'
+              boxShadow: '0 0 50px rgba(0, 0, 0, 0.5)',
+              transition: 'background 0.3s ease',
+              maxWidth: '100%',
+              height: 'auto',
             }}
           >
             <g transform="translate(300, 300)">
               
-              {/* KP Sub-Lords Ring - Outermost */}
               <KPSubLordRing 
-                 showKPSubLords={showKPSubLords} 
+                showKPSubLords={showKPSubLords} 
                 planets={panchangaData?.planets}
               />
               
-              {/* Nakshatra Ring - Outer */}
               <NakshatraRing 
-              currentMoonLongitude={panchangaData?.moon.longitude}
-              planets={panchangaData?.planets}
-               />
+                currentMoonLongitude={panchangaData?.moon.longitude}
+              />
               
-              {/* Rashi Ring - Middle */}
               <RashiRing currentMoonLongitude={panchangaData?.moon.longitude} />
               
-              {/* Decorative circles */}
-              <circle cx="0" cy="0" r="280" fill="none" stroke="#6B5B4580" strokeWidth="2" />
-              {/* Removed r=260 circle - it was cutting through Nakshatra sections */}
+              <circle cx="0" cy="0" r="280" fill="none" stroke={colors.ringStroke} strokeWidth="2" />
               
-              {/* Houses Ring - on planet orbit */}
               <HousesRing 
                 ascendantDegree={ascendant?.degree} 
                 showHouses={showHouses}
               />
               
-              {/* Inner sky circle - bigger for Panchanga info */}
-              <circle cx="0" cy="0" r="130" fill="#2C3E5080" stroke="#5A7BA880" strokeWidth="2" />
+              <circle 
+                cx="0" 
+                cy="0" 
+                r="130" 
+                fill={colors.innerCircle} 
+                stroke={colors.innerCircleStroke} 
+                strokeWidth="2" 
+              />
               
-              {/* Sun, Moon, and all planets */}   
               {panchangaData && panchangaData.planets && (
                 <CelestialBodies planets={panchangaData.planets} />
               )}
 
-              {/* Center area with time and mini Panchanga */}
               <g>
-                {/* Time - larger */}
                 <text
                   x="0"
                   y="-35"
                   textAnchor="middle"
                   fontSize="28"
-                  fill="#F0F0F0"
+                  fill={colors.primaryText}
                   fontWeight="bold"
                 >
-                  {formatTime(currentTime)}
+                  {formatTime(selectedDate)}
                 </text>
 
-                {/* Date - below time */}
                 <text
                   x="0"
                   y="-15"
                   textAnchor="middle"
                   fontSize="10"
-                  fill="#B0B0B0"
+                  fill={colors.secondaryText}
                 >
-                  {currentTime.toLocaleDateString('en-US', { 
+                  {selectedDate.toLocaleDateString('en-US', { 
                     weekday: 'short', 
                     month: 'short', 
                     day: 'numeric',
@@ -172,47 +222,47 @@ function PanchangaClock() {
                   })}
                 </text>
 
-                {/* Divider line */}
+                {!isNow() && (
+                  <text
+                    x="0"
+                    y="-3"
+                    textAnchor="middle"
+                    fontSize="7"
+                    fill={colors.accentText}
+                    fontWeight="bold"
+                  >
+                    {selectedDate < new Date() ? '(Past)' : '(Future)'}
+                  </text>
+                )}
+
                 <line
                   x1="-50"
                   y1="-5"
                   x2="50"
                   y2="-5"
-                  stroke="#D4AF37"
+                  stroke={colors.accentText}
                   strokeWidth="0.5"
                   opacity="0.5"
                 />
 
-                {/* Panchanga Info - Compact */}
                 {panchangaData && (
                   <>
-                    {/* Nakshatra */}
-                    <text x="0" y="10" textAnchor="middle" fontSize="11" fill="#D4AF37" fontWeight="bold">
+                    <text x="0" y="10" textAnchor="middle" fontSize="11" fill={colors.accentText} fontWeight="bold">
                       {panchangaData.moon.nakshatra}
                     </text>
-
-                    {/* Tithi */}
-                    <text x="0" y="25" textAnchor="middle" fontSize="9" fill="#CCCCCC">
+                    <text x="0" y="25" textAnchor="middle" fontSize="9" fill={colors.secondaryText}>
                       {panchangaData.tithi.name}
                     </text>
-
-                    {/* Vara (Day) */}
-                    <text x="0" y="38" textAnchor="middle" fontSize="8" fill="#999999">
+                    <text x="0" y="38" textAnchor="middle" fontSize="8" fill={colors.tertiaryText}>
                       {panchangaData.vara.sanskrit}
                     </text>
-
-                    {/* Moon Phase */}
                     <text x="0" y="56" textAnchor="middle" fontSize="18">
                       {panchangaData.moonPhase.phaseEmoji}
                     </text>
-
-                    {/* Paksha */}
-                    <text x="0" y="70" textAnchor="middle" fontSize="7" fill="#888888">
+                    <text x="0" y="70" textAnchor="middle" fontSize="7" fill={colors.tertiaryText}>
                       {panchangaData.tithi.paksha} Paksha
                     </text>
-
-                    {/* Rashi info - compact */}
-                    <text x="0" y="82" textAnchor="middle" fontSize="7" fill="#888888">
+                    <text x="0" y="82" textAnchor="middle" fontSize="7" fill={colors.tertiaryText}>
                       ☉ {panchangaData.sun.sign} • 🌙 {panchangaData.moon.sign}
                     </text>
                   </>
@@ -222,6 +272,18 @@ function PanchangaClock() {
             </g>
           </svg>
         </div>
+
+        {/* Date and Time Navigation */}
+        <DateNavigation 
+          selectedDate={selectedDate}
+          onDateChange={handleDateChange}
+        />
+
+        {/* Enhanced Location Picker */}
+        <LocationPicker
+          location={location}
+          onLocationChange={handleLocationChange}
+        />
 
         {/* Control Panel */}
         <ControlPanel
@@ -233,19 +295,26 @@ function PanchangaClock() {
           setLocation={setLocation}
         />
 
-        {/* Optional: Keep bottom panel for detailed info or remove it */}
-        {/* Comment out if you want info only in center and control panel */}
+        {/* Panchanga Details */}
         {panchangaData && (
           <PanchangaInfo panchangaData={panchangaData} />
         )}
 
+        {/* Muhurta Timeline - AT THE BOTTOM */}
+        <MuhurtaTimeline 
+          selectedDate={selectedDate}
+          location={location}
+        />
+
         {/* Status text */}
         <p style={{ 
           marginTop: '20px', 
-          color: '#888',
-          fontSize: '14px'
+          marginBottom: '40px',
+          color: colors.tertiaryText,
+          fontSize: '14px',
+          transition: 'color 0.3s ease',
         }}>
-          Phase 6: Houses & KP Sub-Lords with Toggle Controls ✅
+          All UI/UX Improvements Complete! 🎉
         </p>
       </div>
     </div>

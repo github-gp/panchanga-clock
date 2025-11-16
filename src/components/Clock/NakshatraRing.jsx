@@ -1,7 +1,12 @@
 import React from 'react';
 import { NAKSHATRAS, getNakshatraAngle, getPointOnCircle } from '../../utils/nakshatras';
+// ⭐ NEW: Import theme hook
+import { useTheme } from '../../ThemeContext';
 
-function NakshatraRing({ currentMoonLongitude, planets }) {
+function NakshatraRing({ currentMoonLongitude }) {
+  // ⭐ NEW: Get theme
+  const { theme } = useTheme();
+
   const outerRadius = 270;
   const innerRadius = 240;
   const textRadius = 255;
@@ -21,23 +26,15 @@ function NakshatraRing({ currentMoonLongitude, planets }) {
     'Mercury': '#A9A9A9'    // Grey
   };
 
-  // Nakshatra lords in order (repeats every 9)
+  // Nakshatra lords in order
   const nakshatraLords = [
     'Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury', // 1-9
     'Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury', // 10-18
     'Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'  // 19-27
   ];
 
-  // Map Nakshatra names to their index to get the lord
-  const getNakshatraLord = (nakshatraName) => {
-    const nakshatraIndex = NAKSHATRAS.findIndex(n => n.name === nakshatraName);
-    if (nakshatraIndex === -1) return 'Sun'; // Fallback
-    return nakshatraLords[nakshatraIndex];
-  };
-
   return (
     <g className="nakshatra-ring">
-      {/* Draw colored sections */}
       {NAKSHATRAS.map((nakshatra, index) => {
         const startAngle = getNakshatraAngle(index);
         const endAngle = getNakshatraAngle(index + 1);
@@ -71,14 +68,24 @@ function NakshatraRing({ currentMoonLongitude, planets }) {
         const lord = nakshatraLords[index];
         const lordColor = lordColors[lord] || '#888888';
 
+        // ⭐ NEW: Text color based on theme
+        const textColor = isCurrentNakshatra 
+          ? "#FFD700"  // Gold for current nakshatra (works in both themes)
+          : (theme === 'dark' ? "#DDDDDD" : "#2c3e50");  // Light grey for dark mode, dark blue-grey for light mode
+
+        // ⭐ NEW: Stroke color based on theme
+        const strokeColor = isCurrentNakshatra 
+          ? "#FFD700" 
+          : (theme === 'dark' ? "#555555" : "#999999");
+
         return (
           <g key={nakshatra.id}>
-            {/* Colored section */}
+            {/* Colored section by lord */}
             <path
               d={pathData}
               fill={lordColor}
               fillOpacity={isCurrentNakshatra ? 0.7 : 0.4}
-              stroke={isCurrentNakshatra ? "#FFD700" : "#555555"}
+              stroke={strokeColor}
               strokeWidth={isCurrentNakshatra ? 2 : 0.5}
             />
 
@@ -88,7 +95,7 @@ function NakshatraRing({ currentMoonLongitude, planets }) {
               y={textPos.y}
               textAnchor="middle"
               fontSize="7"
-              fill={isCurrentNakshatra ? "#FFD700" : "#DDDDDD"}
+              fill={textColor}  // ⭐ CHANGED: Now uses theme-aware color
               fontWeight={isCurrentNakshatra ? "bold" : "normal"}
               transform={`rotate(${textRotation} ${textPos.x} ${textPos.y})`}
             >
@@ -98,11 +105,14 @@ function NakshatraRing({ currentMoonLongitude, planets }) {
         );
       })}
 
-      {/* Dividing lines */}
+      {/* Dividing lines - subtle */}
       {NAKSHATRAS.map((nakshatra, index) => {
         const angle = getNakshatraAngle(index);
         const outerPoint = getPointOnCircle(angle, outerRadius);
         const innerPoint = getPointOnCircle(angle, innerRadius);
+
+        // ⭐ NEW: Line color based on theme
+        const lineColor = theme === 'dark' ? '#333333' : '#999999';
 
         return (
           <line
@@ -111,90 +121,12 @@ function NakshatraRing({ currentMoonLongitude, planets }) {
             y1={innerPoint.y}
             x2={outerPoint.x}
             y2={outerPoint.y}
-            stroke="#555555"
+            stroke={lineColor}  // ⭐ CHANGED: Now uses theme-aware color
             strokeWidth="0.5"
             opacity="0.3"
           />
         );
       })}
-
-      {/* Show Nakshatra LORD labels where planets are located */}
-      {planets && Object.entries(planets).map(([planetName, planetData]) => {
-        if (!planetData || planetData.longitude === undefined) return null;
-        
-        const planetLongitude = planetData.longitude;
-        
-        // Find which Nakshatra this planet is in
-        const nakshatra = NAKSHATRAS.find(n => 
-          planetLongitude >= n.startDegree && 
-          planetLongitude < n.startDegree + 13.333
-        );
-        
-        if (!nakshatra) return null;
-        
-        // Get the LORD of this Nakshatra
-        const nakshatraLord = getNakshatraLord(nakshatra.name);
-        
-        // Calculate position for label
-        const nakshatraIndex = NAKSHATRAS.findIndex(n => n.name === nakshatra.name);
-        const startAngle = getNakshatraAngle(nakshatraIndex);
-        const endAngle = getNakshatraAngle(nakshatraIndex + 1);
-        const middleAngle = (startAngle + endAngle) / 2;
-        
-        const labelRadius = 285; // Outside the ring
-        const pos = getPointOnCircle(middleAngle, labelRadius);
-        
-        // Lord abbreviations
-        const lordAbbr = {
-          'Ketu': 'Ke',
-          'Venus': 'Ve',
-          'Sun': 'Su',
-          'Moon': 'Mo',
-          'Mars': 'Ma',
-          'Rahu': 'Ra',
-          'Jupiter': 'Ju',
-          'Saturn': 'Sa',
-          'Mercury': 'Me'
-        };
-        
-        // Calculate text rotation
-        let textRotation = ((middleAngle + Math.PI / 2) * 180) / Math.PI;
-        if (textRotation > 90 && textRotation < 270) {
-          textRotation = textRotation + 180;
-        }
-        
-        return (
-          <g key={`nakshatra-label-${planetName}`}>
-            {/* Background circle */}
-            <circle
-              cx={pos.x}
-              cy={pos.y}
-              r="12"
-              fill="#000000"
-              fillOpacity="0.8"
-              stroke={lordColors[nakshatraLord]}
-              strokeWidth="2"
-            />
-            
-            {/* Show NAKSHATRA LORD (not planet name!) */}
-            <text
-              x={pos.x}
-              y={pos.y + 4}
-              textAnchor="middle"
-              fontSize="11"
-              fontWeight="bold"
-              fill={lordColors[nakshatraLord]}
-              transform={`rotate(${textRotation} ${pos.x} ${pos.y + 4})`}
-            >
-              {lordAbbr[nakshatraLord]}
-            </text>
-          </g>
-        );
-      })}
-
-      {/* Border circles */}
-      <circle cx="0" cy="0" r={outerRadius} fill="none" stroke="#666666" strokeWidth="1.5" opacity="0.5" />
-      <circle cx="0" cy="0" r={innerRadius} fill="none" stroke="#666666" strokeWidth="1.5" opacity="0.5" />
     </g>
   );
 }

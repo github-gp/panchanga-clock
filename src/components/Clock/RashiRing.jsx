@@ -1,41 +1,39 @@
 import React from 'react';
-import { RASHIS, getRashiAngle } from '../../utils/rashis';
+import { RASHIS, getRashiAngle, getCurrentMoonRashi } from '../../utils/rashis';
 import { getPointOnCircle } from '../../utils/nakshatras';
+// ⭐ NEW: Import theme hook
+import { useTheme } from '../../ThemeContext';
 
 function RashiRing({ currentMoonLongitude }) {
-  const outerRadius = 230;
-  const innerRadius = 180;
-  const textRadius = 205;
+  // ⭐ NEW: Get theme
+  const { theme } = useTheme();
 
-  const rashiSpan = (2 * Math.PI) / 12;
+  // Radius settings for the Rashi ring (inside Nakshatra ring)
+  const outerRadius = 220;  // Outer edge of Rashi ring
+  const innerRadius = 170;  // Inner edge of Rashi ring
+  const textRadius = 195;   // Where text will be placed
 
-  // Softer, eye-friendly colors
-  const softRashiColors = {
-    'Mesha': '#FF8A8080',      // Soft red
-    'Vrishabha': '#90EE9080',  // Soft green
-    'Mithuna': '#FFD70080',    // Soft yellow
-    'Karka': '#87CEEB80',      // Soft blue
-    'Simha': '#FFA50080',      // Soft orange
-    'Kanya': '#98FB9880',      // Soft mint
-    'Tula': '#DDA0DD80',       // Soft purple
-    'Vrischika': '#20B2AA80',  // Soft teal
-    'Dhanu': '#F4A46080',      // Soft coral
-    'Makara': '#8FBC8F80',     // Soft sage
-    'Kumbha': '#B0C4DE80',     // Soft steel blue
-    'Meena': '#DEB88780'       // Soft pink
-  };
+  // Get current Moon's Rashi for highlighting
+  const currentMoonRashi = getCurrentMoonRashi();
+
+  // Calculate one Rashi's angle span
+  const rashiSpan = (2 * Math.PI) / 12; // Full circle / 12 = 30° each
 
   return (
     <g className="rashi-ring">
+      {/* Draw each Rashi section */}
       {RASHIS.map((rashi, index) => {
+        // Calculate start and end angles for this Rashi
         const startAngle = getRashiAngle(index);
         const endAngle = getRashiAngle(index + 1);
         
+        // Calculate points for the arc
         const outerStart = getPointOnCircle(startAngle, outerRadius);
         const outerEnd = getPointOnCircle(endAngle, outerRadius);
         const innerStart = getPointOnCircle(startAngle, innerRadius);
         const innerEnd = getPointOnCircle(endAngle, innerRadius);
 
+        // Create SVG path for this Rashi section (larger than Nakshatra)
         const pathData = `
           M ${outerStart.x} ${outerStart.y}
           A ${outerRadius} ${outerRadius} 0 0 1 ${outerEnd.x} ${outerEnd.y}
@@ -44,59 +42,83 @@ function RashiRing({ currentMoonLongitude }) {
           Z
         `;
 
+        // Calculate text position (middle of the Rashi)
         const textAngle = startAngle + (rashiSpan / 2);
         const textPos = getPointOnCircle(textAngle, textRadius);
+
+        // Calculate text rotation
         let textRotation = ((textAngle + Math.PI / 2) * 180) / Math.PI;
         
+        // Flip text on bottom half so it's always readable
         if (textRotation > 90 && textRotation < 270) {
           textRotation = textRotation + 180;
         }
 
+        // Check if this is the current Moon's Rashi
         const isCurrentRashi = currentMoonLongitude &&
           currentMoonLongitude >= rashi.startDegree &&
           currentMoonLongitude < rashi.endDegree;
 
+        // ⭐ NEW: Text colors based on theme
+        // For Rashi symbols and English names - always visible
+        const symbolColor = theme === 'dark' ? '#ffffff' : '#1a1a1a';
+        const englishColor = theme === 'dark' ? '#ffffff' : '#2c3e50';
+        // Sanskrit names - slightly lighter
+        const sanskritColor = theme === 'dark' ? '#cccccc' : '#495057';
+
         return (
           <g key={rashi.id}>
-            {/* Colored section */}
+            {/* Colored section for this Rashi */}
             <path
               d={pathData}
-              fill={softRashiColors[rashi.name] || rashi.color}
-              fillOpacity={isCurrentRashi ? 0.7 : 0.3}
-              stroke={isCurrentRashi ? "#FFD700" : "#8B7355"}
-              strokeWidth={isCurrentRashi ? 2.5 : 1}
+              fill={rashi.color}
+              fillOpacity={isCurrentRashi ? 0.7 : 0.4}  // Brighter if current
+              stroke="#D4AF37"
+              strokeWidth={isCurrentRashi ? 3 : 1.5}    // Thicker if current
             />
 
-            {/* Large zodiac symbol */}
+            {/* Zodiac Symbol (large) */}
             <text
               x={textPos.x}
-              y={textPos.y - 5}
+              y={textPos.y - 8}
               textAnchor="middle"
-              fontSize="20"
-              fill={isCurrentRashi ? "#FFD700" : "#FFFFFF"}
+              fontSize="24"
+              fill={symbolColor}  // ⭐ CHANGED: Now uses theme-aware color
               fontWeight="bold"
-              transform={`rotate(${textRotation} ${textPos.x} ${textPos.y - 5})`}
+              transform={`rotate(${textRotation} ${textPos.x} ${textPos.y - 8})`}
             >
               {rashi.symbol}
             </text>
 
-            {/* English name only - cleaner! */}
+            {/* English name */}
             <text
               x={textPos.x}
-              y={textPos.y + 12}
+              y={textPos.y + 10}
               textAnchor="middle"
-              fontSize="10"
-              fill={isCurrentRashi ? "#FFD700" : "#DDDDDD"}
-              fontWeight={isCurrentRashi ? "bold" : "normal"}
-              transform={`rotate(${textRotation} ${textPos.x} ${textPos.y + 12})`}
+              fontSize="11"
+              fill={englishColor}  // ⭐ CHANGED: Now uses theme-aware color
+              fontWeight="600"
+              transform={`rotate(${textRotation} ${textPos.x} ${textPos.y + 10})`}
             >
               {rashi.english}
+            </text>
+
+            {/* Sanskrit name (smaller) */}
+            <text
+              x={textPos.x}
+              y={textPos.y + 22}
+              textAnchor="middle"
+              fontSize="9"
+              fill={sanskritColor}  // ⭐ CHANGED: Now uses theme-aware color
+              transform={`rotate(${textRotation} ${textPos.x} ${textPos.y + 22})`}
+            >
+              {rashi.name}
             </text>
           </g>
         );
       })}
 
-      {/* Dividing lines */}
+      {/* Draw dividing lines between Rashis */}
       {RASHIS.map((rashi, index) => {
         const angle = getRashiAngle(index);
         const outerPoint = getPointOnCircle(angle, outerRadius);
@@ -109,16 +131,32 @@ function RashiRing({ currentMoonLongitude }) {
             y1={innerPoint.y}
             x2={outerPoint.x}
             y2={outerPoint.y}
-            stroke="#666666"
-            strokeWidth="1"
-            opacity="0.4"
+            stroke="#8B7355"
+            strokeWidth="2"
+            opacity="0.6"
           />
         );
       })}
 
-      {/* Border circles */}
-      <circle cx="0" cy="0" r={outerRadius} fill="none" stroke="#8B7355" strokeWidth="1.5" opacity="0.4" />
-      <circle cx="0" cy="0" r={innerRadius} fill="none" stroke="#8B7355" strokeWidth="1.5" opacity="0.4" />
+      {/* Optional: Add decorative border circles */}
+      <circle
+        cx="0"
+        cy="0"
+        r={outerRadius}
+        fill="none"
+        stroke="#D4AF37"
+        strokeWidth="2"
+        opacity="0.5"
+      />
+      <circle
+        cx="0"
+        cy="0"
+        r={innerRadius}
+        fill="none"
+        stroke="#D4AF37"
+        strokeWidth="2"
+        opacity="0.5"
+      />
     </g>
   );
 }
