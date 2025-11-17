@@ -9,7 +9,7 @@ import ControlPanel from './ControlPanel';
 import DateNavigation from './DateNavigation';
 import ClockSideButtons from './ClockSideButtons';
 import MuhurtaTimeline from './MuhurtaTimeline';
-import LocationPicker from './LocationPicker.jsx/ ⭐ NEW: Enhanced location picker
+import LocationPicker from './LocationPicker'; // ⭐ NEW: Enhanced location picker
 import { getPanchangaData } from '../../services/astronomyService';
 import { calculateAscendant, DEFAULT_LOCATION } from '../../services/houseCalculations';
 import { useTheme } from '../../ThemeContext';
