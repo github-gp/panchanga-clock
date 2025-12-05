@@ -11,6 +11,7 @@ import ClockSideButtons from './ClockSideButtons';
 import MuhurtaTimeline from './MuhurtaTimeline';
 import LocationPicker from './LocationPicker';
 import EventTracker from './EventTracker';
+import PlanetTransitAnalyzer from './PlanetTransitAnalyzer';
 import { getPanchangaData } from '../../services/astronomyService';
 import { calculateAscendant, DEFAULT_LOCATION } from '../../services/houseCalculations';
 import { useTheme } from '../../ThemeContext';
@@ -19,19 +20,13 @@ import { useTheme } from '../../ThemeContext';
 function PanchangaClock() {
   const { colors } = useTheme();
 
-  // State for selected date and time
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // State to store Panchanga data
   const [panchangaData, setPanchangaData] = useState(null);
-
-  // State for Houses and KP Sub-Lords
   const [showHouses, setShowHouses] = useState(false);
   const [showKPSubLords, setShowKPSubLords] = useState(false);
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [ascendant, setAscendant] = useState(null);
 
-  // Calculate Panchanga for the selected date and time
   useEffect(() => {
     const calculatePanchanga = () => {
       try {
@@ -53,31 +48,26 @@ function PanchangaClock() {
     calculatePanchanga();
   }, [selectedDate, location]);
 
-  // Handle date/time change
   const handleDateChange = (newDate) => {
     setSelectedDate(newDate);
   };
 
-  // Handle location change
   const handleLocationChange = (newLocation) => {
     setLocation(newLocation);
   };
 
-  // Go to previous day
   const goToPreviousDay = () => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() - 1);
     setSelectedDate(newDate);
   };
 
-  // Go to next day
   const goToNextDay = () => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + 1);
     setSelectedDate(newDate);
   };
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowLeft') {
@@ -93,7 +83,6 @@ function PanchangaClock() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedDate]);
 
-  // Format time as HH:MM:SS
   const formatTime = (date) => {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -101,11 +90,10 @@ function PanchangaClock() {
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  // Check if viewing current moment
   const isNow = () => {
     const now = new Date();
     const diff = Math.abs(selectedDate - now);
-    return diff < 60000; // Within 1 minute
+    return diff < 60000;
   };
 
   return (
@@ -133,7 +121,6 @@ function PanchangaClock() {
           🕐 Panchanga Clock
         </h1>
 
-        {/* Clock Container with Side Buttons */}
         <div style={{
           position: 'relative',
           background: colors.cardBackground,
@@ -144,13 +131,11 @@ function PanchangaClock() {
           maxWidth: '700px',
           margin: '0 auto',
         }}>
-          {/* Previous/Next Day Buttons on Sides */}
           <ClockSideButtons 
             onPreviousDay={goToPreviousDay}
             onNextDay={goToNextDay}
           />
 
-          {/* Main Clock SVG */}
           <svg 
             width="600" 
             height="600" 
@@ -275,19 +260,16 @@ function PanchangaClock() {
           </svg>
         </div>
 
-        {/* Date and Time Navigation */}
         <DateNavigation 
           selectedDate={selectedDate}
           onDateChange={handleDateChange}
         />
 
-        {/* Enhanced Location Picker */}
         <LocationPicker
           location={location}
           onLocationChange={handleLocationChange}
         />
 
-        {/* Control Panel */}
         <ControlPanel
           showHouses={showHouses}
           setShowHouses={setShowHouses}
@@ -297,12 +279,14 @@ function PanchangaClock() {
           setLocation={setLocation}
         />
 
-        {/* Panchanga Details */}
         {panchangaData && (
           <PanchangaInfo panchangaData={panchangaData} />
         )}
 
-        {/* EVENT TRACKER - POSITIONED HERE, JUST ABOVE MUHURTA TIMELINE */}
+        {/* NEW: Planet Transit Analyzer */}
+        <PlanetTransitAnalyzer />
+
+        {/* EVENT TRACKER */}
         {panchangaData && (
           <EventTracker 
             panchangaData={panchangaData} 
@@ -310,13 +294,11 @@ function PanchangaClock() {
           />
         )}
 
-        {/* Muhurta Timeline - AT THE BOTTOM */}
         <MuhurtaTimeline 
           selectedDate={selectedDate}
           location={location}
         />
 
-        {/* Status text */}
         <p style={{ 
           marginTop: '20px', 
           marginBottom: '40px',
@@ -324,7 +306,7 @@ function PanchangaClock() {
           fontSize: '14px',
           transition: 'color 0.3s ease',
         }}>
-          Event Tracker with Full Planet Data! 🎉
+          Planet Transit Analyzer - Track Any Planet! 🪐
         </p>
       </div>
     </div>
