@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTheme } from '../../ThemeContext';
 import { getPanchangaData } from '../../services/astronomyService';
@@ -14,7 +13,6 @@ function PlanetTransitAnalyzer() {
   const [results, setResults] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Available planets
   const planets = [
     { name: 'Sun', label: '☉ Sun', emoji: '☉' },
     { name: 'Moon', label: '🌙 Moon', emoji: '🌙' },
@@ -27,7 +25,6 @@ function PlanetTransitAnalyzer() {
     { name: 'Ketu', label: '☋ Ketu', emoji: '☋' }
   ];
 
-  // Get Sign Lord
   const getSignLord = (signName) => {
     const signLords = {
       'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury',
@@ -38,7 +35,6 @@ function PlanetTransitAnalyzer() {
     return signLords[signName] || 'N/A';
   };
 
-  // Get Nakshatra Lord
   const getNakshatraLord = (nakshatraName) => {
     const nakshatraLords = {
       'Ashwini': 'Ketu', 'Bharani': 'Venus', 'Krittika': 'Sun',
@@ -54,7 +50,6 @@ function PlanetTransitAnalyzer() {
     return nakshatraLords[nakshatraName] || 'N/A';
   };
 
-  // Get Nakshatra from longitude
   const getNakshatraFromLongitude = (longitude) => {
     const nakshatras = [
       'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
@@ -67,7 +62,6 @@ function PlanetTransitAnalyzer() {
     return nakshatras[nakshatraIndex] || 'N/A';
   };
 
-  // Get KP SubLord from longitude
   const getKPSubLord = (longitude) => {
     const subLords = generateKPSubLords();
     const subLord = subLords.find(sub => 
@@ -76,7 +70,6 @@ function PlanetTransitAnalyzer() {
     return subLord ? subLord.subLord : 'N/A';
   };
 
-  // Get Sign from longitude
   const getSignFromLongitude = (longitude) => {
     const signs = [
       'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -86,13 +79,35 @@ function PlanetTransitAnalyzer() {
     return signs[signIndex] || 'N/A';
   };
 
-  // Abbreviate planet names
   const abbreviate = (name) => {
     const abbr = {
       'Sun': 'Su', 'Moon': 'Mo', 'Mars': 'Ma', 'Mercury': 'Me',
       'Jupiter': 'Ju', 'Venus': 'Ve', 'Saturn': 'Sa', 'Rahu': 'Ra', 'Ketu': 'Ke'
     };
     return abbr[name] || name;
+  };
+
+  // FIXED: Better planet data extraction
+  const getPlanetData = (panchangaData, planetName) => {
+    const lowerName = planetName.toLowerCase();
+
+    // Try direct access (for Sun and Moon)
+    if (panchangaData[lowerName] && panchangaData[lowerName].longitude !== undefined) {
+      return panchangaData[lowerName];
+    }
+
+    // Try planets object
+    if (panchangaData.planets && panchangaData.planets[planetName]) {
+      return panchangaData.planets[planetName];
+    }
+
+    // Try lowercase in planets
+    if (panchangaData.planets && panchangaData.planets[lowerName]) {
+      return panchangaData.planets[lowerName];
+    }
+
+    console.warn(`Planet ${planetName} not found in data:`, Object.keys(panchangaData));
+    return null;
   };
 
   const analyzePlanetTransits = () => {
@@ -104,21 +119,16 @@ function PlanetTransitAnalyzer() {
     setIsAnalyzing(true);
     const transitData = [];
 
-    // Parse dates
     const startDate = new Date(fromDate);
     const endDate = new Date(toDate);
-
-    // Parse times
     const [fromHour, fromMin] = fromTime.split(':').map(Number);
     const [toHour, toMin] = toTime.split(':').map(Number);
 
-    // Iterate through each date
     let currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
       const dateKey = currentDate.toISOString().split('T')[0];
 
-      // Track unique lords for this date
       const signLords = new Set();
       const nakshatraLords = new Set();
       const subLords = new Set();
@@ -133,15 +143,14 @@ function PlanetTransitAnalyzer() {
         try {
           const panchangaData = getPanchangaData(checkDate);
 
-          // Get selected planet's data
-          const planetData = panchangaData[selectedPlanet.toLowerCase()];
+          // FIXED: Use new getPlanetData function
+          const planetData = getPlanetData(panchangaData, selectedPlanet);
 
           if (planetData && planetData.longitude !== undefined) {
-            const planetLongitude = planetData.longitude;
+            const planetLongitude = Number(planetData.longitude);
             const planetSign = planetData.sign || planetData.rashi || getSignFromLongitude(planetLongitude);
             const planetNakshatra = planetData.nakshatra || getNakshatraFromLongitude(planetLongitude);
 
-            // Get lords
             const signLord = getSignLord(planetSign);
             const nakshatraLord = getNakshatraLord(planetNakshatra);
             const subLord = getKPSubLord(planetLongitude);
@@ -151,30 +160,35 @@ function PlanetTransitAnalyzer() {
             signLords.add(signLord);
             nakshatraLords.add(nakshatraLord);
             subLords.add(subLord);
+          } else {
+            console.warn(`No data for ${selectedPlanet} at`, checkDate);
           }
         } catch (error) {
           console.error('Error calculating for', checkDate, error);
         }
       }
 
-      transitData.push({
-        date: dateKey,
-        displayDate: currentDate.toLocaleDateString('en-IN', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
-        }),
-        signs: Array.from(signs),
-        nakshatras: Array.from(nakshatras),
-        signLords: Array.from(signLords),
-        nakshatraLords: Array.from(nakshatraLords),
-        subLords: Array.from(subLords)
-      });
+      // Only add if we found data
+      if (signs.size > 0) {
+        transitData.push({
+          date: dateKey,
+          displayDate: currentDate.toLocaleDateString('en-IN', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+          }),
+          signs: Array.from(signs),
+          nakshatras: Array.from(nakshatras),
+          signLords: Array.from(signLords),
+          nakshatraLords: Array.from(nakshatraLords),
+          subLords: Array.from(subLords)
+        });
+      }
 
-      // Move to next day
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
+    console.log(`Found ${transitData.length} days of data for ${selectedPlanet}`);
     setResults(transitData);
     setIsAnalyzing(false);
   };
@@ -212,7 +226,6 @@ function PlanetTransitAnalyzer() {
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
       overflow: 'hidden'
     }}>
-      {/* Header */}
       <div style={{
         padding: '16px',
         borderBottom: `1px solid ${colors.border}`,
@@ -226,9 +239,7 @@ function PlanetTransitAnalyzer() {
         </p>
       </div>
 
-      {/* Input Form */}
       <div style={{ padding: '20px' }}>
-        {/* Planet Selection */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{
             display: 'block',
@@ -273,7 +284,6 @@ function PlanetTransitAnalyzer() {
           gap: '16px',
           marginBottom: '20px'
         }}>
-          {/* From Date */}
           <div>
             <label style={{
               display: 'block',
@@ -301,7 +311,6 @@ function PlanetTransitAnalyzer() {
             />
           </div>
 
-          {/* To Date */}
           <div>
             <label style={{
               display: 'block',
@@ -329,7 +338,6 @@ function PlanetTransitAnalyzer() {
             />
           </div>
 
-          {/* From Time */}
           <div>
             <label style={{
               display: 'block',
@@ -357,7 +365,6 @@ function PlanetTransitAnalyzer() {
             />
           </div>
 
-          {/* To Time */}
           <div>
             <label style={{
               display: 'block',
@@ -386,7 +393,6 @@ function PlanetTransitAnalyzer() {
           </div>
         </div>
 
-        {/* Analyze Button */}
         <button
           onClick={analyzePlanetTransits}
           disabled={isAnalyzing || !fromDate || !toDate}
@@ -407,7 +413,6 @@ function PlanetTransitAnalyzer() {
         </button>
       </div>
 
-      {/* Results */}
       {results.length > 0 && (
         <div style={{
           padding: '20px',
@@ -443,7 +448,6 @@ function PlanetTransitAnalyzer() {
             </button>
           </div>
 
-          {/* Results Table */}
           <div style={{
             overflowX: 'auto',
             maxHeight: '400px',
@@ -560,6 +564,17 @@ function PlanetTransitAnalyzer() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {results.length === 0 && !isAnalyzing && fromDate && toDate && (
+        <div style={{
+          padding: '20px',
+          textAlign: 'center',
+          color: colors.textMuted,
+          fontSize: '14px'
+        }}>
+          No data found for {selectedPlanet}. Check browser console for details.
         </div>
       )}
     </div>
