@@ -10,19 +10,21 @@ import DateNavigation from './DateNavigation';
 import ClockSideButtons from './ClockSideButtons';
 import MuhurtaTimeline from './MuhurtaTimeline';
 import LocationPicker from './LocationPicker';
+import EventTracker from './EventTracker';
 import { getPanchangaData } from '../../services/astronomyService';
 import { calculateAscendant, DEFAULT_LOCATION } from '../../services/houseCalculations';
 import { useTheme } from '../../ThemeContext';
+
 
 function PanchangaClock() {
   const { colors } = useTheme();
 
   // State for selected date and time
   const [selectedDate, setSelectedDate] = useState(new Date());
-  
+
   // State to store Panchanga data
   const [panchangaData, setPanchangaData] = useState(null);
-  
+
   // State for Houses and KP Sub-Lords
   const [showHouses, setShowHouses] = useState(false);
   const [showKPSubLords, setShowKPSubLords] = useState(false);
@@ -35,7 +37,7 @@ function PanchangaClock() {
       try {
         const data = getPanchangaData(selectedDate);
         setPanchangaData(data);
-        
+
         const asc = calculateAscendant(
           selectedDate, 
           location.latitude, 
@@ -130,7 +132,7 @@ function PanchangaClock() {
         }}>
           🕐 Panchanga Clock
         </h1>
-        
+
         {/* Clock Container with Side Buttons */}
         <div style={{
           position: 'relative',
@@ -163,25 +165,25 @@ function PanchangaClock() {
             }}
           >
             <g transform="translate(300, 300)">
-              
+
               <KPSubLordRing 
                 showKPSubLords={showKPSubLords} 
                 planets={panchangaData?.planets}
               />
-              
+
               <NakshatraRing 
                 currentMoonLongitude={panchangaData?.moon.longitude}
               />
-              
+
               <RashiRing currentMoonLongitude={panchangaData?.moon.longitude} />
-              
+
               <circle cx="0" cy="0" r="280" fill="none" stroke={colors.ringStroke} strokeWidth="2" />
-              
+
               <HousesRing 
                 ascendantDegree={ascendant?.degree} 
                 showHouses={showHouses}
               />
-              
+
               <circle 
                 cx="0" 
                 cy="0" 
@@ -190,7 +192,7 @@ function PanchangaClock() {
                 stroke={colors.innerCircleStroke} 
                 strokeWidth="2" 
               />
-              
+
               {panchangaData && panchangaData.planets && (
                 <CelestialBodies planets={panchangaData.planets} />
               )}
@@ -300,6 +302,14 @@ function PanchangaClock() {
           <PanchangaInfo panchangaData={panchangaData} />
         )}
 
+        {/* EVENT TRACKER - POSITIONED HERE, JUST ABOVE MUHURTA TIMELINE */}
+        {panchangaData && (
+          <EventTracker 
+            panchangaData={panchangaData} 
+            selectedDate={selectedDate}
+          />
+        )}
+
         {/* Muhurta Timeline - AT THE BOTTOM */}
         <MuhurtaTimeline 
           selectedDate={selectedDate}
@@ -314,7 +324,7 @@ function PanchangaClock() {
           fontSize: '14px',
           transition: 'color 0.3s ease',
         }}>
-          All UI/UX Improvements Complete! 🎉
+          Event Tracker with Full Planet Data! 🎉
         </p>
       </div>
     </div>
